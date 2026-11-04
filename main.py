@@ -1,4 +1,3 @@
-
 import time
 import hmac
 import hashlib
@@ -17,7 +16,7 @@ ISSUER = "My OTP Project"
 SECRET_FILE = "secret.txt"
 
 
-# Create a secret key if it does not exist
+#Create a secret key if it does not exist
 def get_secret():
 
     try:
@@ -25,9 +24,7 @@ def get_secret():
             secret = file.read().strip()
 
     except FileNotFoundError:
-        secret = base64.b32encode(
-            secrets.token_bytes(20)
-        ).decode("utf-8").replace("=", "")
+        secret = base64.b32encode(secrets.token_bytes(20)).decode("utf-8").replace("=", "")
 
         with open(SECRET_FILE, "w") as file:
             file.write(secret)
@@ -49,17 +46,19 @@ def generate_otp(secret):
     message = struct.pack(">Q", counter)
 
     # Calculate HMAC-SHA1
-    hash_value = hmac.new(
-        key, message, hashlib.sha1
-    ).digest()
+    hash_value = hmac.new(key, message, hashlib.sha1).digest()
 
-    # Get the last 4 bits to find the offset
+    #find the position of the 4 bytes
     offset = hash_value[-1] & 0x0F
 
-    # Get 4 bytes from the hash
-    number = struct.unpack(
-        ">I", hash_value[offset:offset + 4]
-    )[0] & 0x7FFFFFFF
+    # Get 4 bytes from the hash value
+    four_bytes = hash_value[offset:offset + 4]
+    
+    # Convert the bytes into a number
+    number = struct.unpack(">I", four_bytes)[0]
+    
+    # Remove the first bit
+    number = number & 0x7FFFFFFF
 
     # Make a 6-digit OTP
     otp = number % 1000000
@@ -78,10 +77,7 @@ def generate_qr(secret):
         + "&algorithm=SHA1&digits=6&period=30"
     )
 
-    qr = qrcode.QRCode(
-        box_size=10,
-        border=4
-    )
+    qr = qrcode.QRCode(box_size=10,border=4 )
 
     qr.add_data(uri)
     qr.make(fit=True)
